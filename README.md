@@ -1,4 +1,4 @@
-# Sparkline — NL → SQL Business Q&A Service
+# NL → SQL Business Q&A Service
 
 Ask plain-English business questions about `sparkline_demo.db` (customers,
 products, sales, employees) and get back the generated SQL, the tables it
