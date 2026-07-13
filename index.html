@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sparkline — Business Q&A by Kanish Shah</title>
+<meta name="description" content="Ask plain-English questions about business data. AI writes the SQL, validates it for safety, and explains the answer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy-900: #070F1A;
+    --navy-800: #0D1B2A;
+    --navy-700: #122030;
+    --navy-600: #1A3050;
+    --navy-500: #1E3A5F;
+    --amber:    #F5A623;
+    --amber-dim: #C8871A;
+    --amber-glow: rgba(245,166,35,0.12);
+    --teal:     #4ECDC4;
+    --green:    #52C98A;
+    --red:      #FF6B6B;
+    --text-primary:   #EEF2F7;
+    --text-secondary: #8BAABF;
+    --text-dim:       #3D5A73;
+  }
+
+  html { font-size: 16px; scroll-behavior: smooth; }
+
+  body {
+    background: var(--navy-800);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ═══════════════════════════════════════
+     HEADER
+  ═══════════════════════════════════════ */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--navy-500);
+    background: rgba(13,27,42,0.96);
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(14px);
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 1.1rem;
+    color: var(--text-primary); text-decoration: none;
+  }
+  .logo-icon {
+    width: 30px; height: 30px; background: var(--amber);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .badge {
+    font-size: 0.72rem; color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--navy-700);
+    padding: 4px 10px; border-radius: 20px;
+    border: 1px solid var(--navy-500);
+  }
+  .github-link {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.8rem; color: var(--text-secondary);
+    text-decoration: none;
+    padding: 5px 12px; border-radius: 8px;
+    border: 1px solid var(--navy-500);
+    transition: all 0.2s;
+  }
+  .github-link:hover { border-color: var(--amber); color: var(--amber); }
+
+  /* ═══════════════════════════════════════
+     HERO
+  ═══════════════════════════════════════ */
+  .hero {
+    max-width: 760px; margin: 0 auto;
+    padding: 60px 24px 36px;
+    text-align: center;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; color: var(--amber);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 22px;
+    padding: 5px 14px;
+    border: 1px solid rgba(245,166,35,0.3);
+    border-radius: 20px;
+    background: rgba(245,166,35,0.06);
+  }
+  .eyebrow-dot {
+    width: 6px; height: 6px;
+    background: var(--amber); border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.1rem);
+    font-weight: 700; line-height: 1.12;
+    letter-spacing: -0.025em;
+    margin-bottom: 16px;
+  }
+  h1 em { font-style: normal; color: var(--amber); }
+
+  .hero-sub {
+    color: var(--text-secondary);
+    font-size: 1.05rem; line-height: 1.65;
+    max-width: 490px; margin: 0 auto 40px;
+  }
+
+  /* ═══════════════════════════════════════
+     PIPELINE VISUALIZATION  ← signature element
+  ═══════════════════════════════════════ */
+  .pipeline {
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 38px;
+    gap: 0;
+  }
+  .pipe-step {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 7px; padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+    min-width: 76px;
+    opacity: 0.3;
+    user-select: none;
+  }
+  .pipe-step.active {
+    opacity: 1;
+    background: var(--amber-glow);
+    border-color: rgba(245,166,35,0.4);
+    box-shadow: 0 0 16px rgba(245,166,35,0.1);
+  }
+  .pipe-step.done  { opacity: 0.75; }
+  .pipe-step.idle  { opacity: 0.3; }
+  .pipe-step.error { opacity: 1; }
+
+  .pipe-icon {
+    font-size: 1.35rem;
+    transition: transform 0.35s ease;
+    line-height: 1;
+  }
+  .pipe-step.active .pipe-icon { transform: scale(1.25); }
+
+  .pipe-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.63rem; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    white-space: nowrap;
+    transition: color 0.35s;
+  }
+  .pipe-step.active .pipe-label { color: var(--amber); }
+  .pipe-step.done  .pipe-label  { color: var(--text-secondary); }
+
+  .pipe-connector {
+    color: var(--text-dim); font-size: 1rem;
+    padding: 0 4px; flex-shrink: 0;
+    margin-top: -12px;
+    transition: color 0.35s;
+  }
+  .pipe-connector.lit { color: var(--amber); }
+
+  /* ═══════════════════════════════════════
+     INPUT
+  ═══════════════════════════════════════ */
+  .input-row {
+    position: relative; margin-bottom: 16px;
+  }
+  .input-row input {
+    width: 100%;
+    padding: 17px 60px 17px 20px;
+    background: var(--navy-700);
+    border: 1.5px solid var(--navy-500);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif; font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .input-row input::placeholder { color: var(--text-dim); }
+  .input-row input:focus {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(245,166,35,0.1);
+  }
+  .ask-btn {
+    position: absolute; right: 8px; top: 50%;
+    transform: translateY(-50%);
+    background: var(--amber); border: none; border-radius: 9px;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 1.25rem; color: #000; font-weight: 700;
+    transition: background 0.2s, transform 0.15s;
+    flex-shrink: 0;
+  }
+  .ask-btn:hover { background: var(--amber-dim); transform: translateY(-50%) scale(1.06); }
+  .ask-btn:active { transform: translateY(-50%) scale(0.96); }
+  .ask-btn.loading { pointer-events: none; }
+  .ask-btn .spinner {
+    display: none;
+    width: 18px; height: 18px;
+    border: 2.5px solid rgba(0,0,0,0.25);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  .ask-btn.loading .arrow  { display: none; }
+  .ask-btn.loading .spinner{ display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ═══════════════════════════════════════
+     CHIPS
+  ═══════════════════════════════════════ */
+  .chips {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center;
+  }
+  .chip {
+    padding: 7px 15px;
+    background: var(--navy-700);
+    border: 1px solid var(--navy-500);
+    border-radius: 20px;
+    font-size: 0.8rem; color: var(--text-secondary);
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    transition: all 0.18s;
+  }
+  .chip:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: var(--amber-glow);
+  }
+
+  /* ═══════════════════════════════════════
+     RESULTS SECTION
+  ═══════════════════════════════════════ */
+  .results-section {
+    max-width: 900px; margin: 0 auto;
+    padding: 32px 24px 80px;
+    display: none;
+    flex-direction: column; gap: 16px;
+  }
+  .results-section.open { display: flex; }
+
+  /* ── Card base ── */
+  .card {
+    background: var(--navy-700);
+    border: 1px solid var(--navy-500);
+    border-radius: 12px;
+    overflow: hidden;
+    opacity: 0; transform: translateY(18px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .card.visible { opacity: 1; transform: translateY(0); }
+
+  .card-hdr {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--navy-500);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.75rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-secondary);
+  }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-amber { background: var(--amber); }
+  .dot-teal  { background: var(--teal); }
+  .dot-green { background: var(--green); }
+  .dot-red   { background: var(--red); }
+  .hdr-right { margin-left: auto; }
+
+  /* ── Answer card ── */
+  .answer-body {
+    padding: 20px 20px 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.08rem; line-height: 1.6;
+    color: var(--text-primary);
+  }
+  .answer-tags {
+    padding: 10px 20px 16px;
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem; padding: 3px 9px;
+    border-radius: 5px;
+    border: 1px solid var(--navy-500);
+    color: var(--text-dim);
+    background: var(--navy-600);
+  }
+  .tag b { color: var(--text-secondary); font-weight: 500; }
+
+  /* ── SQL card ── */
+  .sql-body {
+    padding: 18px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem; line-height: 1.85;
+    white-space: pre-wrap; word-break: break-word;
+    color: #AECCE8;
+    overflow-x: auto;
+  }
+  .sql-kw  { color: var(--amber); font-weight: 600; }
+  .sql-fn  { color: var(--teal); }
+  .sql-str { color: #A8E6CF; }
+  .sql-num { color: #FFD93D; }
+
+  /* ── Table card ── */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  thead tr {
+    background: var(--navy-900);
+    border-bottom: 1px solid var(--navy-500);
+  }
+  th {
+    padding: 10px 18px; text-align: left;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem; font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.07em;
+    white-space: nowrap;
+  }
+  th.num { text-align: right; }
+  tbody tr { border-bottom: 1px solid rgba(30,58,95,0.5); transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(245,166,35,0.04); }
+  td { padding: 11px 18px; font-family: 'Inter', sans-serif; }
+  td.num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.86rem; color: var(--teal); text-align: right;
+  }
+  td:first-child { font-weight: 500; }
+
+  /* ── Error card ── */
+  .error-body {
+    padding: 20px;
+    color: var(--red); font-size: 0.9rem; line-height: 1.65;
+  }
+  .error-body strong { display: block; margin-bottom: 6px; font-size: 1rem; }
+  .error-body code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem; color: var(--amber);
+    display: inline-block; margin-top: 8px;
+  }
+
+  /* ═══════════════════════════════════════
+     FOOTER
+  ═══════════════════════════════════════ */
+  footer {
+    text-align: center;
+    padding: 20px 24px 36px;
+    font-size: 0.76rem; color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.9;
+    border-top: 1px solid var(--navy-600);
+    margin-top: 20px;
+    display: none;
+  }
+  footer.open { display: block; }
+  footer a { color: var(--text-secondary); text-decoration: none; }
+  footer a:hover { color: var(--amber); }
+
+  /* ═══════════════════════════════════════
+     RESPONSIVE
+  ═══════════════════════════════════════ */
+  @media (max-width: 640px) {
+    header { padding: 14px 18px; }
+    .github-link span { display: none; }
+    .hero { padding: 40px 18px 28px; }
+    .pipe-step { min-width: 58px; padding: 8px 8px; }
+    .pipe-label { font-size: 0.57rem; }
+    .pipe-connector { padding: 0 1px; }
+    h1 { font-size: 1.8rem; }
+    .results-section { padding: 20px 16px 60px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+    .pipe-step { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<header>
+  <a class="logo" href="#">
+    <div class="logo-icon">⬡</div>
+    Sparkline
+  </a>
+  <div class="header-right">
+    <span class="badge">NL → SQL demo</span>
+    <a class="github-link" href="https://github.com/yourusername/sparkline-nlsql" target="_blank">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      <span>GitHub</span>
+    </a>
+  </div>
+</header>
+
+<!-- ═══════════════════ HERO ═══════════════════ -->
+<section class="hero">
+  <div class="eyebrow">
+    <span class="eyebrow-dot"></span>
+    AI Engineer Project
+  </div>
+
+  <h1>Ask anything.<br>Get <em>real SQL</em>. Instantly.</h1>
+
+  <p class="hero-sub">
+    Type a plain-English business question. Gemini AI writes the SQL,
+    a safety validator checks it, and the database answers — in plain English.
+  </p>
+
+  <!-- ── PIPELINE — the signature element ── -->
+  <div class="pipeline" id="pipeline">
+    <div class="pipe-step idle" id="ps0">
+      <div class="pipe-icon">💬</div>
+      <div class="pipe-label">Question</div>
+    </div>
+    <div class="pipe-connector" id="pc0">›</div>
+    <div class="pipe-step idle" id="ps1">
+      <div class="pipe-icon">✦</div>
+      <div class="pipe-label">Gemini AI</div>
+    </div>
+    <div class="pipe-connector" id="pc1">›</div>
+    <div class="pipe-step idle" id="ps2">
+      <div class="pipe-icon">🛡</div>
+      <div class="pipe-label">Validate</div>
+    </div>
+    <div class="pipe-connector" id="pc2">›</div>
+    <div class="pipe-step idle" id="ps3">
+      <div class="pipe-icon">🗄</div>
+      <div class="pipe-label">Database</div>
+    </div>
+    <div class="pipe-connector" id="pc3">›</div>
+    <div class="pipe-step idle" id="ps4">
+      <div class="pipe-icon">✓</div>
+      <div class="pipe-label">Answer</div>
+    </div>
+  </div>
+
+  <!-- ── INPUT ── -->
+  <div class="input-row">
+    <input
+      type="text"
+      id="questionInput"
+      placeholder="Who are our top 5 customers by revenue?"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button class="ask-btn" id="askBtn" aria-label="Ask">
+      <span class="arrow">›</span>
+      <span class="spinner"></span>
+    </button>
+  </div>
+
+  <!-- ── PRESET CHIPS ── -->
+  <div class="chips">
+    <span class="chip" data-q="Who are our top 5 customers by revenue?">Top 5 customers</span>
+    <span class="chip" data-q="What is the total sales by region?">Sales by region</span>
+    <span class="chip" data-q="Show monthly revenue trend">Monthly revenue</span>
+    <span class="chip" data-q="Who is the highest paid employee?">Top earner</span>
+    <span class="chip" data-q="Which product category generates the most revenue?">Best category</span>
+    <span class="chip" data-q="How many Enterprise customers do we have?">Enterprise count</span>
+    <span class="chip" data-q="Delete all sales records">🚫 Try a write</span>
+  </div>
+</section>
+
+<!-- ═══════════════════ RESULTS ═══════════════════ -->
+<section class="results-section" id="resultsSection">
+
+  <!-- ANSWER -->
+  <div class="card" id="cardAnswer">
+    <div class="card-hdr">
+      <div class="dot dot-amber"></div>
+      Answer
+    </div>
+    <div class="answer-body" id="answerBody"></div>
+    <div class="answer-tags" id="answerTags"></div>
+  </div>
+
+  <!-- SQL -->
+  <div class="card" id="cardSql" style="display:none">
+    <div class="card-hdr">
+      <div class="dot dot-teal"></div>
+      SQL Generated
+      <button class="hdr-right" id="copyBtn" title="Copy SQL"
+        style="background:none;border:1px solid var(--navy-500);border-radius:6px;
+               padding:3px 10px;font-size:0.68rem;color:var(--text-secondary);
+               cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:0.05em;
+               transition:all 0.18s;">
+        copy
+      </button>
+    </div>
+    <div class="sql-body" id="sqlBody"></div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card" id="cardTable" style="display:none">
+    <div class="card-hdr">
+      <div class="dot dot-green"></div>
+      Results
+      <span class="hdr-right" id="rowCount"
+        style="font-size:0.68rem;font-family:'JetBrains Mono',monospace;color:var(--text-dim)">
+      </span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<footer id="pageFooter">
+  API · <code>localhost:8001</code> ·
+  Read-only SQLite · sqlglot validator · FastAPI ·
+  Built by <strong>Kanish Shah</strong> ·
+  <a href="https://github.com/yourusername/sparkline-nlsql" target="_blank">View on GitHub</a>
+</footer>
+
+<!-- ═══════════════════ SCRIPT ═══════════════════ -->
+<script>
+/* ── CONFIG — change these when you deploy ─────────── */
+const CFG = {
+  API_URL: 'http://localhost:8001',
+  API_KEY: 'sparkline-demo-key-123',
+};
+
+/* ── PIPELINE ────────────────────────────────────── */
+const pSteps = [0,1,2,3,4].map(i => document.getElementById('ps' + i));
+const pConns = [0,1,2,3].map(i => document.getElementById('pc' + i));
+let pTimer = null;
+
+function pipeReset() {
+  clearInterval(pTimer);
+  pSteps.forEach(el => el.className = 'pipe-step idle');
+  pConns.forEach(el => el.classList.remove('lit'));
+}
+
+function pipeActivate(i) {
+  pSteps.forEach((el, j) => {
+    if (j < i)      el.className = 'pipe-step done';
+    else if (j===i) el.className = 'pipe-step active';
+    else            el.className = 'pipe-step idle';
+  });
+  pConns.forEach((el, j) => {
+    el.classList.toggle('lit', j < i);
+  });
+}
+
+function pipeAllDone() {
+  pSteps.forEach(el => el.className = 'pipe-step done');
+  pConns.forEach(el => el.classList.add('lit'));
+}
+
+function pipeError() {
+  pSteps.forEach(el => el.className = 'pipe-step idle');
+  pConns.forEach(el => el.classList.remove('lit'));
+}
+
+function pipeAnimate() {
+  let step = 0;
+  const delays = [0, 250, 550, 950];
+  delays.forEach((d, i) => {
+    setTimeout(() => pipeActivate(i + 1), d);
+  });
+}
+
+/* ── SQL SYNTAX HIGHLIGHTER ─────────────────────── */
+const SQL_KW = ['SELECT','FROM','WHERE','JOIN','ON','GROUP BY','ORDER BY',
+  'LIMIT','AS','AND','OR','IN','NOT','NULL','DISTINCT','HAVING','INNER',
+  'LEFT','RIGHT','OUTER','BY','WITH'];
+const SQL_FN = ['SUM','AVG','COUNT','MAX','MIN','ROUND','strftime','COALESCE',
+  'UPPER','LOWER','LENGTH','TRIM'];
+
+function highlightSQL(sql) {
+  let h = sql
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // keywords (longest first to avoid partial matches)
+  SQL_KW.sort((a,b) => b.length - a.length).forEach(k => {
+    h = h.replace(new RegExp('\\b(' + k + ')\\b','gi'),
+      '<span class="sql-kw">$1</span>');
+  });
+  // functions
+  SQL_FN.forEach(f => {
+    h = h.replace(new RegExp('\\b(' + f + ')\\b','gi'),
+      '<span class="sql-fn">$1</span>');
+  });
+  // string literals
+  h = h.replace(/'([^']*)'/g, "<span class=\"sql-str\">'$1'</span>");
+  // numbers
+  h = h.replace(/\b(\d+(\.\d+)?)\b/g, '<span class="sql-num">$1</span>');
+  return h;
+}
+
+/* ── FORMAT VALUES ───────────────────────────────── */
+function isNumCol(key, rows) {
+  return rows.some(r => typeof r[key] === 'number');
+}
+
+function fmtVal(v) {
+  if (v == null) return '—';
+  if (typeof v === 'number') {
+    if (Number.isInteger(v) || Math.abs(v - Math.round(v)) < 0.005) {
+      const rounded = Math.round(v);
+      // Treat as currency if large
+      return rounded >= 1000
+        ? '₹' + rounded.toLocaleString('en-IN')
+        : rounded.toLocaleString('en-IN');
+    }
+    return v.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  }
+  return String(v);
+}
+
+/* ── SHOW RESULTS ────────────────────────────────── */
+function showResults(data) {
+  document.getElementById('resultsSection').classList.add('open');
+  document.getElementById('pageFooter').classList.add('open');
+
+  /* Answer */
+  document.getElementById('answerBody').textContent = data.answer || '—';
+
+  const tagsEl = document.getElementById('answerTags');
+  tagsEl.innerHTML = '';
+  if (data.tables_used && data.tables_used.length) {
+    tagsEl.innerHTML += `<span class="tag"><b>tables </b>${data.tables_used.join(', ')}</span>`;
+  }
+  if (data.engine_used) {
+    tagsEl.innerHTML += `<span class="tag"><b>engine </b>${data.engine_used}</span>`;
+  }
+  if (data.result) {
+    tagsEl.innerHTML += `<span class="tag"><b>rows </b>${data.result.length}</span>`;
+  }
+
+  /* SQL */
+  const sqlCard = document.getElementById('cardSql');
+  const sqlBody = document.getElementById('sqlBody');
+  if (data.sql) {
+    sqlBody.innerHTML = highlightSQL(data.sql);
+    sqlCard.style.display = '';
+    // Copy button
+    document.getElementById('copyBtn').onclick = () => {
+      navigator.clipboard.writeText(data.sql).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = 'copied!';
+        btn.style.color = 'var(--green)';
+        setTimeout(() => { btn.textContent = 'copy'; btn.style.color = ''; }, 1500);
+      });
+    };
+  } else {
+    sqlCard.style.display = 'none';
+  }
+
+  /* Table */
+  const tableCard = document.getElementById('cardTable');
+  if (data.result && data.result.length > 0) {
+    const rows = data.result;
+    const cols = Object.keys(rows[0]);
+
+    document.getElementById('tableHead').innerHTML =
+      '<tr>' + cols.map(c =>
+        `<th class="${isNumCol(c,rows)?'num':''}">${c.replace(/_/g,' ')}</th>`
+      ).join('') + '</tr>';
+
+    document.getElementById('tableBody').innerHTML = rows.map((row, ri) =>
+      '<tr>' + cols.map(c => {
+        const num = isNumCol(c, rows);
+        return `<td class="${num?'num':''}">${num ? fmtVal(row[c]) : (row[c]??'—')}</td>`;
+      }).join('') + '</tr>'
+    ).join('');
+
+    const n = rows.length;
+    document.getElementById('rowCount').textContent = n + ' row' + (n!==1?'s':'');
+    tableCard.style.display = '';
+  } else {
+    tableCard.style.display = 'none';
+  }
+
+  /* Staggered card reveal */
+  const cards = ['cardAnswer','cardSql','cardTable'];
+  cards.forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.classList.remove('visible');
+    if (el.style.display !== 'none') {
+      setTimeout(() => el.classList.add('visible'), 60 + i * 130);
+    }
+  });
+}
+
+/* ── SHOW ERROR ──────────────────────────────────── */
+function showError(msg) {
+  document.getElementById('resultsSection').classList.add('open');
+  document.getElementById('cardSql').style.display = 'none';
+  document.getElementById('cardTable').style.display = 'none';
+
+  document.getElementById('answerBody').innerHTML =
+    `<div class="error-body">
+      <strong>Couldn't reach the server</strong>
+      ${msg}<br><br>
+      Make sure your FastAPI server is running:<br>
+      <code>cd code &amp;&amp; uvicorn app.main:app --port 8001</code>
+    </div>`;
+  document.getElementById('answerTags').innerHTML = '';
+
+  setTimeout(() => document.getElementById('cardAnswer').classList.add('visible'), 60);
+}
+
+/* ── MAIN ASK ────────────────────────────────────── */
+async function ask(preset) {
+  const input = document.getElementById('questionInput');
+  const btn   = document.getElementById('askBtn');
+
+  if (preset) input.value = preset;
+  const q = input.value.trim();
+  if (!q) { input.focus(); return; }
+
+  /* Loading */
+  btn.classList.add('loading');
+  pipeReset();
+
+  /* Reset cards */
+  ['cardAnswer','cardSql','cardTable'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('visible');
+    el.style.display = '';
+  });
+
+  pipeActivate(0);
+  pipeAnimate();
+
+  try {
+    const res = await fetch(`${CFG.API_URL}/ask`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': CFG.API_KEY,
+      },
+      body: JSON.stringify({ question: q }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    pipeAllDone();
+    showResults(data);
+
+    // Scroll to results
+    setTimeout(() => {
+      document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
+
+  } catch (err) {
+    pipeError();
+    showError(err.message);
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+/* ── EVENTS ──────────────────────────────────────── */
+document.getElementById('askBtn').addEventListener('click', () => ask());
+document.getElementById('questionInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') ask();
+});
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => ask(chip.dataset.q));
+});
+</script>
+</body>
+</html>

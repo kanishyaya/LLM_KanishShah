@@ -1,0 +1,9 @@
+fastapi==0.137.2
+uvicorn==0.49.0
+pydantic==2.13.4
+sqlglot==30.11.0
+requests==2.33.1
+
+# Test-only dependencies (used by code/tests/)
+pytest==9.1.1
+httpx==0.28.1
