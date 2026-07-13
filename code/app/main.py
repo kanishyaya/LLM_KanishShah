@@ -8,7 +8,10 @@ import logging
 
 from fastapi import Depends, FastAPI
 from fastapi.exceptions import RequestValidationError
+<<<<<<< HEAD
 from fastapi.middleware.cors import CORSMiddleware
+=======
+>>>>>>> 896b52aece47c2f4f2180e32fb4a1f2d3440a52f
 from starlette.responses import JSONResponse
 
 from app.auth import require_api_key
@@ -30,6 +33,7 @@ app = FastAPI(
     version="2.0.0",
 )
 
+<<<<<<< HEAD
 # Allow the frontend (served from any origin during local dev, or a specific
 # domain once deployed) to call this API from a browser.
 app.add_middleware(
@@ -39,6 +43,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+=======
+>>>>>>> 896b52aece47c2f4f2180e32fb4a1f2d3440a52f
 # Built once at process start. For the LLM-backed engine this just stores
 # the API key/base url/model -- no network call happens until the first
 # real question comes in.
